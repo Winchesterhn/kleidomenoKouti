@@ -8,6 +8,10 @@ int buttonState[4] = {0, 0, 0, 0};
 
 bool solved = 0;
 
+unsigned long previousMillis = 0;
+unsigned long currentMillis = millis();
+unsigned long period = 10000;
+
 void setup() {
   // boxLock.attach(servoPin);
 
@@ -25,13 +29,17 @@ void loop() {
 
     for (int i = 0; i < 4; i++) {
 
-      unsigned long time_start = millis();// start time
-      while (millis() - time_start <= 6000) {// Gives them 6 seconds to press the next correct button
+      //      unsigned long time_start = millis();// start time
+      //      while (millis() - time_start <= 6000) {// Gives them 6 seconds to press the next correct button
 
-        untilCorrectPressed(i);
+      untilCorrectPressed(i);
+      previousMillis = currentMillis;
 
+      // }
+      if (currentMillis - previousMillis >= period) {
+        reset();
+        previousMillis = currentMillis;
       }
-
     }
     //    while (buttonState[0] < 800) {
     //      buttonState[0] = analogRead(buttonsAndCode[0]);
@@ -111,4 +119,14 @@ void untilCorrectPressed(int i) {
 void Door() {
   digitalWrite(nDoor, HIGH);//Opens the box and waits until reset.
   while (true);
+}
+void reset() {
+  buttonsAndCode[0] = analogRead(A0);
+  buttonsAndCode[1] = analogRead(A1);
+  buttonsAndCode[2] = analogRead(A2);
+  buttonsAndCode[3] = analogRead(A5);
+  buttonState[0] = 0;
+  buttonState[1] = 0;
+  buttonState[2] = 0;
+  buttonState[3] = 0;
 }
