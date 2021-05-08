@@ -1,132 +1,65 @@
-//#include <Servo.h>
-//int servoPin = 12;
-//Servo boxLock;
-int nDoor = 13;// this pin is set to 5V when the riddle is solved
+#include <Servo.h>// library necessary for micro servo
+int servoPin = 12;
+Servo boxLock;
+int nDoor = 13;// this pin will be set to 5V when the riddle is solved
 
-int buttonsAndCode[4] = {A0, A1, A2, A5};
-int buttonState[4] = {0, 0, 0, 0};
-
-bool solved = 0;
-
-unsigned long previousMillis = 0;
-unsigned long currentMillis = millis();
-unsigned long period = 10000;
+int buttonsAndCode[5] = {2, 3, 4, 5, 6};//declare all button pins. The first 4 are the correct sequence. 
+int buttonState[5] = {0, 0, 0, 0, 0};//flag refering to the state of the button
 
 void setup() {
-  // boxLock.attach(servoPin);
+  boxLock.attach(servoPin);
 
-  for (int i = 0; i < 4; i++) {
-    pinMode(buttonsAndCode[i], INPUT);
+  for (int i = 0; i < 5; i++) {
+    pinMode(buttonsAndCode[i], INPUT);// declare all button pins as input
   }
   pinMode(nDoor, OUTPUT);
   digitalWrite(nDoor, LOW);// pull the "riddle solved" pin to ground
-  Serial.begin(9600);
+  Serial.begin(9600);// Allow serial communication. For debugging.
 }
 
 void loop() {
-
-  if (solved == 0) {
-
-    for (int i = 0; i < 4; i++) {
-
-      //      unsigned long time_start = millis();// start time
-      //      while (millis() - time_start <= 6000) {// Gives them 6 seconds to press the next correct button
-
-      untilCorrectPressed(i);
-      previousMillis = currentMillis;
-
-      // }
-      if (currentMillis - previousMillis >= period) {
-        reset();
-        previousMillis = currentMillis;
+  int pressed;
+  int i = 0;
+  while (i < 4) {
+   //Reads all the buttons and sets the ButtonState table accordingly.
+    for (int j = 0; j < 5; j++) {
+      buttonState[j] = digitalRead(buttonsAndCode[j]);
+      //Waits while a button is pressed. Necessary, so the arduino doesn't read the same button multiple times.
+      while (digitalRead(buttonsAndCode[j]) == 1) {
+        delay(100);
       }
     }
-    //    while (buttonState[0] < 800) {
-    //      buttonState[0] = analogRead(buttonsAndCode[0]);
-    //      Serial.print(buttonState[0]);
-    //      delay(2000);
-    //      if (buttonState[0] >= 800) {
-    //        Serial.print("first pressed \n");
-    //if((buttonState[1] > 800) || (buttonState[2] > 800) || (buttonState[3] > 800)){
-    //
-    //      }
-    //      }
-    //
-    //    }
-    //    while (buttonState[1] < 800) {
-    //      buttonState[1] = analogRead(buttonsAndCode[1]);
-    //      Serial.print(buttonState[1]);
-    //      delay(3000);
-    //      if (buttonState[1] >= 800) {
-    //        Serial.print("second pressed \n");
-    //if((buttonState[0] > 800) || (buttonState[2] > 800) || (buttonState[3] > 800)){
-    //
-    //      }
-    //      }
-    //
-    //    }
-    //    while (buttonState[2] < 800) {
-    //      buttonState[2] = analogRead(buttonsAndCode[2]);
-    //      Serial.print(buttonState[2]);
-    //      delay(3000);
-    //      if (buttonState[2] >= 800) {
-    //        Serial.print("third pressed \n");
-    //if((buttonState[0] > 800) || (buttonState[1] > 800) || (buttonState[3] > 800)){
-    //
-    //      }
-    //      }
-    //
-    //    }
-    //    while (buttonState[3] < 800) {
-    //      buttonState[3] = analogRead(buttonsAndCode[3]);
-    //      Serial.print(buttonState[3]);
-    //      delay(3000);
-    //      if (buttonState[3] >= 800) {
-    //        Serial.print("fourth pressed \n");
-    //if((buttonState[0] > 800) || (buttonState[1] > 800) || (buttonState[2] > 800)){
-    //
-    //      }
-    //      }
-    //    }
-  }
-  for (int i = 0; i < 4; i++) {
-    Serial.print(buttonState[i]);
-    Serial.print("\n");
-  }
-  if ((buttonState[0] > 800) && (buttonState[1] > 800) && (buttonState[2] > 800) && (buttonState[3] > 800)) {//  Why does it always return true????
-
-    solved = 1;
-  }
-
-  if (solved == 1); {//enter if the correct sequence was pressed
-    // boxLock.write(180);// Make servo go to 90 degrees, unlocks the box.
-    delay(5000);
-    Serial.print("the box unlocks\n");
-    Door();
-  }
-}
-void untilCorrectPressed(int i) {
-  while (buttonState[i] < 800) {
-    buttonState[i] = analogRead(buttonsAndCode[i]);
-    Serial.print(buttonState[i]);//shows the value of its button. Helps in debugging
-    //    Serial.print("\n");
-    delay(2000);
-    if (buttonState[i] >= 800) {
-      Serial.print("pressed correctly \n");
+    pressed = -1;//A value that would not be reached. 
+    //Checks which button is pressed and sets the variable "pressed" accordingly.
+    for (int j = 0; j < 5; j++) {
+      if (buttonState[j] == 1) {
+        pressed = j;
+        break;// when it knows which is pressed, it exits the "for loop".
+      }
+    }
+    //Checks if any button was pressed. If it was correct, moves on to the next. If not, restarts.
+    if (pressed >= 0) {
+      if ( pressed == i ) {
+        i = i + 1;
+        Serial.print("correct: ");
+        Serial.println(pressed);
+      }
+      else {
+        Serial.print("wrong: ");
+        Serial.print(pressed);
+        Serial.println("  Resets! ");
+        i = 0;
+      }
     }
   }
+  Door();//Opens the box and waits until reset.
 }
+
+
+//Opens the box and waits until reset.
 void Door() {
-  digitalWrite(nDoor, HIGH);//Opens the box and waits until reset.
+  digitalWrite(nDoor, HIGH);
+  boxLock.write(180);// Make servo go to 90 degrees, unlocks the box.
+  Serial.print("the box unlocks\n");
   while (true);
-}
-void reset() {
-  buttonsAndCode[0] = analogRead(A0);
-  buttonsAndCode[1] = analogRead(A1);
-  buttonsAndCode[2] = analogRead(A2);
-  buttonsAndCode[3] = analogRead(A5);
-  buttonState[0] = 0;
-  buttonState[1] = 0;
-  buttonState[2] = 0;
-  buttonState[3] = 0;
 }
